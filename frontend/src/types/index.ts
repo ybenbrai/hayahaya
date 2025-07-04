@@ -76,3 +76,92 @@ export interface LiveScoreUpdate {
   goals: Goal[];
   isHalfTime: boolean;
 }
+
+export interface WebSocketMessage {
+  type: string;
+  payload: string;
+}
+
+export interface PlayerStats {
+  id: string;
+  name: string;
+  number: number;
+  position: string;
+  teamId: string;
+  photo: string;
+  goals: number;
+  assists: number;
+  rating: number;
+  minutesPlayed: number;
+  yellowCards: number;
+  redCards: number;
+  shots: number;
+  passes: number;
+  passAccuracy: number;
+}
+
+export interface MatchEvent {
+  id: string;
+  type: string;
+  minute: number;
+  playerId?: string;
+  playerName?: string;
+  teamId: string;
+  description: string;
+  cardType?: string;
+  isHomeTeam: boolean;
+  timestamp: string;
+}
+
+export interface StreamInfo {
+  id: string;
+  url: string;
+  type: string;
+  quality: string;
+  language: string;
+  isLive: boolean;
+  fallbackImage: string;
+}
+
+export interface FieldPosition {
+  x: number;
+  y: number;
+  playerId: string;
+  isBall: boolean;
+}
+
+export interface TeamStats {
+  possession: number;
+  shots: number;
+  shotsOnTarget: number;
+  corners: number;
+  fouls: number;
+  yellowCards: number;
+  redCards: number;
+  offsides: number;
+  passes: number;
+  passAccuracy: number;
+}
+
+export interface EnhancedGame extends Game {
+  events: MatchEvent[];
+  streams: StreamInfo[];
+  homeTeamStats: TeamStats;
+  awayTeamStats: TeamStats;
+  fieldPositions: FieldPosition[];
+  attendance?: number;
+  weather?: string;
+  referee?: string;
+}
+
+export interface EnhancedTeamLineup {
+  starting: PlayerStats[];
+  substitutes: PlayerStats[];
+  coach: string;
+  formation: string;
+}
+
+export interface EnhancedLineup {
+  homeTeam: EnhancedTeamLineup;
+  awayTeam: EnhancedTeamLineup;
+}

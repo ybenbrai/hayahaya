@@ -51,7 +51,7 @@ class FootballDataApi(private val apiKey: String) {
 }
 
 @Serializable
-data class MatchesResponse(val matches: List<MatchDto>)
+data class MatchesResponse(val matches: List<MatchDto> = emptyList())
 
 @Serializable
 data class MatchDetailResponse(val match: MatchDto)

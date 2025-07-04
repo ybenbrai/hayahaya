@@ -104,4 +104,89 @@ fun Route.gameRoutes(gameService: GameService) {
             }
         }
     }
+
+    route("/enhanced-game/{id}") {
+        get {
+            try {
+                val gameId = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Game ID is required")
+                val game = gameService.getEnhancedGame(gameId)
+                
+                if (game != null) {
+                    call.respond(game)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Game not found")
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to fetch enhanced game")
+            }
+        }
+    }
+
+    route("/enhanced-lineup/{gameId}") {
+        get {
+            try {
+                val gameId = call.parameters["gameId"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Game ID is required")
+                val lineup = gameService.getEnhancedLineup(gameId)
+                
+                if (lineup != null) {
+                    call.respond(lineup)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Lineup not found")
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to fetch enhanced lineup")
+            }
+        }
+    }
+
+    route("/events/{gameId}") {
+        get {
+            try {
+                val gameId = call.parameters["gameId"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Game ID is required")
+                val game = gameService.getEnhancedGame(gameId)
+                
+                if (game != null) {
+                    call.respond(game.events)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Game not found")
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to fetch match events")
+            }
+        }
+    }
+
+    route("/streams/{gameId}") {
+        get {
+            try {
+                val gameId = call.parameters["gameId"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Game ID is required")
+                val game = gameService.getEnhancedGame(gameId)
+                
+                if (game != null) {
+                    call.respond(game.streams)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Game not found")
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to fetch streams")
+            }
+        }
+    }
+
+    route("/field-positions/{gameId}") {
+        get {
+            try {
+                val gameId = call.parameters["gameId"] ?: return@get call.respond(HttpStatusCode.BadRequest, "Game ID is required")
+                val game = gameService.getEnhancedGame(gameId)
+                
+                if (game != null) {
+                    call.respond(game.fieldPositions)
+                } else {
+                    call.respond(HttpStatusCode.NotFound, "Game not found")
+                }
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.InternalServerError, "Failed to fetch field positions")
+            }
+        }
+    }
 } 

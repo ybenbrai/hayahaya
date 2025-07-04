@@ -22,6 +22,26 @@ class GameService(private val footballDataApi: FootballDataApi? = null) {
 
     private val fallbackGames = mutableListOf<Game>()
 
+    private val sampleNames = listOf(
+        "David De Gea", "Raphaël Varane", "Lisandro Martínez", "Luke Shaw", "Aaron Wan-Bissaka",
+        "Casemiro", "Bruno Fernandes", "Christian Eriksen", "Marcus Rashford", "Jadon Sancho", "Anthony Martial",
+        "Harry Kane", "Heung-min Son", "Dejan Kulusevski", "Pierre-Emile Højbjerg", "Rodrigo Bentancur",
+        "Eric Dier", "Cristian Romero", "Ben Davies", "Emerson Royal", "Hugo Lloris", "Ivan Perišić"
+    )
+
+    private val homeTeamNames = mapOf(
+        "GK" to listOf("David De Gea"),
+        "DEF" to listOf("Luke Shaw", "Raphaël Varane", "Lisandro Martínez", "Aaron Wan-Bissaka"),
+        "MID" to listOf("Casemiro", "Bruno Fernandes", "Christian Eriksen"),
+        "FWD" to listOf("Marcus Rashford", "Jadon Sancho", "Anthony Martial")
+    )
+    private val awayTeamNames = mapOf(
+        "GK" to listOf("Hugo Lloris"),
+        "DEF" to listOf("Ben Davies", "Eric Dier", "Cristian Romero", "Emerson Royal"),
+        "MID" to listOf("Pierre-Emile Højbjerg", "Rodrigo Bentancur", "Ivan Perišić"),
+        "FWD" to listOf("Harry Kane", "Heung-min Son", "Dejan Kulusevski")
+    )
+
     init {
         initializeMockData()
         initializeFallbackData()
@@ -450,5 +470,218 @@ class GameService(private val footballDataApi: FootballDataApi? = null) {
             goals = game.goals,
             isHalfTime = game.isHalfTime
         )
+    }
+
+    suspend fun getEnhancedGame(id: String): EnhancedGame? {
+        val game = getGame(id) ?: return null
+        
+        return EnhancedGame(
+            id = game.id,
+            homeTeam = game.homeTeam,
+            awayTeam = game.awayTeam,
+            startTime = game.startTime,
+            endTime = game.endTime,
+            status = game.status,
+            homeScore = game.homeScore,
+            awayScore = game.awayScore,
+            goals = game.goals,
+            venue = game.venue,
+            competition = game.competition,
+            currentMinute = game.currentMinute,
+            isHalfTime = game.isHalfTime,
+            events = generateMatchEvents(game.id),
+            streams = generateStreams(game.id),
+            homeTeamStats = generateTeamStats(game.homeTeam.id),
+            awayTeamStats = generateTeamStats(game.awayTeam.id),
+            fieldPositions = generateFieldPositions(game.id),
+            attendance = Random.nextInt(30000, 80000),
+            weather = "Sunny, 22°C",
+            referee = "Michael Oliver"
+        )
+    }
+
+    fun getEnhancedLineup(gameId: String): EnhancedLineup? {
+        val lineup = getLineup(gameId) ?: return null
+        
+        return EnhancedLineup(
+            homeTeam = EnhancedTeamLineup(
+                starting = lineup.homeTeam.starting.map { playerToPlayerStats(it) },
+                substitutes = lineup.homeTeam.substitutes.map { playerToPlayerStats(it) },
+                coach = lineup.homeTeam.coach,
+                formation = "4-3-3"
+            ),
+            awayTeam = EnhancedTeamLineup(
+                starting = lineup.awayTeam.starting.map { playerToPlayerStats(it) },
+                substitutes = lineup.awayTeam.substitutes.map { playerToPlayerStats(it) },
+                coach = lineup.awayTeam.coach,
+                formation = "4-4-2"
+            )
+        )
+    }
+
+    private fun playerToPlayerStats(player: Player): PlayerStats {
+        val isHome = player.teamId.endsWith("HOME") || player.teamId.endsWith("A")
+        val namesByPosition = if (isHome) homeTeamNames else awayTeamNames
+        val positionList = namesByPosition[player.position] ?: emptyList()
+        val name = positionList.getOrNull((player.number - 1) % positionList.size) ?: "Player ${player.number}"
+        return PlayerStats(
+            id = player.id,
+            name = name,
+            number = player.number,
+            position = player.position,
+            teamId = player.teamId,
+            photo = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+            goals = if (player.position == "FWD") Random.nextInt(0, 3) else 0,
+            assists = Random.nextInt(0, 5),
+            rating = Random.nextDouble(6.0, 9.5),
+            minutesPlayed = Random.nextInt(45, 90),
+            yellowCards = Random.nextInt(0, 2),
+            redCards = Random.nextInt(0, 1),
+            shots = Random.nextInt(0, 8),
+            passes = Random.nextInt(20, 80),
+            passAccuracy = Random.nextDouble(70.0, 95.0)
+        )
+    }
+
+    private fun generateMatchEvents(gameId: String): List<MatchEvent> {
+        val events = mutableListOf<MatchEvent>()
+        val game = games[gameId] ?: return events
+        
+        // Add goals
+        game.goals.forEach { goal ->
+            events.add(
+                MatchEvent(
+                    id = "event-${goal.id}",
+                    type = "goal",
+                    minute = goal.minute,
+                    playerId = goal.playerId,
+                    playerName = goal.playerName,
+                    teamId = goal.teamId,
+                    description = "Goal! ${goal.playerName} scores!",
+                    isHomeTeam = goal.teamId == game.homeTeam.id,
+                    timestamp = LocalDateTime.now().minusMinutes(Random.nextInt(1, 90).toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                )
+            )
+        }
+        
+        // Add cards
+        for (i in 1..Random.nextInt(2, 6)) {
+            val isHomeTeam = Random.nextBoolean()
+            val teamId = if (isHomeTeam) game.homeTeam.id else game.awayTeam.id
+            val cardType = if (Random.nextBoolean()) "yellow" else "red"
+            
+            events.add(
+                MatchEvent(
+                    id = "event-card-$i",
+                    type = "card",
+                    minute = Random.nextInt(1, 90),
+                    playerId = "player-$teamId-${Random.nextInt(1, 20)}",
+                    playerName = "Player ${Random.nextInt(1, 20)}",
+                    teamId = teamId,
+                    description = "${cardType.capitalize()} card for ${if (isHomeTeam) game.homeTeam.name else game.awayTeam.name}",
+                    cardType = cardType,
+                    isHomeTeam = isHomeTeam,
+                    timestamp = LocalDateTime.now().minusMinutes(Random.nextInt(1, 90).toLong()).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                )
+            )
+        }
+        
+        return events.sortedBy { it.minute }
+    }
+
+    private fun generateStreams(gameId: String): List<StreamInfo> {
+        return listOf(
+            StreamInfo(
+                id = "stream-1",
+                url = "https://example.com/streams/$gameId/master.m3u8",
+                type = "hls",
+                quality = "hd",
+                language = "English",
+                isLive = true,
+                fallbackImage = "https://example.com/fallback/$gameId.jpg"
+            ),
+            StreamInfo(
+                id = "stream-2",
+                url = "https://www.youtube.com/watch?v=example",
+                type = "youtube",
+                quality = "hd",
+                language = "Spanish",
+                isLive = true,
+                fallbackImage = "https://example.com/fallback/$gameId.jpg"
+            )
+        )
+    }
+
+    private fun generateTeamStats(teamId: String): TeamStats {
+        return TeamStats(
+            possession = Random.nextDouble(30.0, 70.0),
+            shots = Random.nextInt(5, 20),
+            shotsOnTarget = Random.nextInt(2, 8),
+            corners = Random.nextInt(3, 12),
+            fouls = Random.nextInt(8, 18),
+            yellowCards = Random.nextInt(1, 4),
+            redCards = Random.nextInt(0, 1),
+            offsides = Random.nextInt(1, 6),
+            passes = Random.nextInt(300, 600),
+            passAccuracy = Random.nextDouble(75.0, 92.0)
+        )
+    }
+
+    private fun generateFieldPositions(gameId: String): List<FieldPosition> {
+        val positions = mutableListOf<FieldPosition>()
+        val game = games[gameId] ?: return positions
+        val lineup = getLineup(gameId) ?: return positions
+        
+        // Add ball position
+        positions.add(
+            FieldPosition(
+                x = Random.nextDouble(20.0, 80.0),
+                y = Random.nextDouble(20.0, 80.0),
+                playerId = "ball",
+                isBall = true
+            )
+        )
+        
+        // Add home team players (starting XI)
+        lineup.homeTeam.starting.forEachIndexed { index, player ->
+            val x = when (player.position) {
+                "GK" -> Random.nextDouble(5.0, 15.0)
+                "DEF" -> Random.nextDouble(10.0, 40.0)
+                "MID" -> Random.nextDouble(25.0, 50.0)
+                "FWD" -> Random.nextDouble(40.0, 60.0)
+                else -> Random.nextDouble(10.0, 50.0)
+            }
+            val y = Random.nextDouble(10.0, 90.0)
+            
+            positions.add(
+                FieldPosition(
+                    x = x,
+                    y = y,
+                    playerId = player.id
+                )
+            )
+        }
+        
+        // Add away team players (starting XI)
+        lineup.awayTeam.starting.forEachIndexed { index, player ->
+            val x = when (player.position) {
+                "GK" -> Random.nextDouble(85.0, 95.0)
+                "DEF" -> Random.nextDouble(60.0, 90.0)
+                "MID" -> Random.nextDouble(50.0, 75.0)
+                "FWD" -> Random.nextDouble(40.0, 60.0)
+                else -> Random.nextDouble(50.0, 90.0)
+            }
+            val y = Random.nextDouble(10.0, 90.0)
+            
+            positions.add(
+                FieldPosition(
+                    x = x,
+                    y = y,
+                    playerId = player.id
+                )
+            )
+        }
+        
+        return positions
     }
 } 
